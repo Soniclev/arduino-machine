@@ -1,5 +1,7 @@
 #define ENABLE_ERROR_LOGGING  // занимает пин LED_BUILTIN
 
+#include "IRremote.h"
+
 #define LEFT_MOTOR 0
 #define RIGHT_MOTOR 1
 #define MOTOR_SPIN_FORWARD 1
@@ -11,7 +13,7 @@ class MotorsHandler
   private:
     const uint8_t in1, in2, in3, in4;  //stores pins which used to control l298n driver
     uint8_t motorStates[2];
-    bool MotorsHandler::setMotorSpinDirection(int pin1, int pin2, int direction)  // set motor spin direction by pins 
+    bool MotorsHandler::setMotorSpinDirection(int pin1, int pin2, int direction)  // set motor spin direction by pins
     {
       switch (direction)
       {
@@ -99,28 +101,127 @@ class MotorsHandler
 
     void MotorsHandler::spinBackward(int motorId) // spin motor backward by its id
     {
-      this->switchMotorState(motorId, MOTOR_SPIN_FORWARD);
+      this->setMotorSpinState(motorId, MOTOR_SPIN_FORWARD);
     }
 
     void MotorsHandler::spinForward(int motorId) // spin motor forward by its id
     {
-      this->switchMotorState(motorId, MOTOR_SPIN_FORWARD);
+      this->setMotorSpinState(motorId, MOTOR_SPIN_FORWARD);
     }
 
     void MotorsHandler::stopMotor(int motorId) // stop motor by its id
     {
-      this->switchMotorState(motorId, MOTOR_SPIN_NONE);
+      this->setMotorSpinState(motorId, MOTOR_SPIN_NONE);
     }
 };
 
-MotorsHandler* handler;  
+#define KEY_NONE 0x0
+#define KEY_HELD 0xFFFFFFFF
+#define KEY_CH_MINUS 0xFFA25D
+#define KEY_CH 0xFF629D
+#define KEY_CH_PLUS 0xFFE21D
+#define KEY_PREV 0xFF22DD
+#define KEY_NEXT 0xFF02FD
+#define KEY_PLAY_PAUSE 0xFFC23D
+#define KEY_VOL_MINUS 0xFFE01F
+#define KEY_VOL_PLUS 0xFFA857
+#define KEY_EQ 0xFF906F
+#define KEY_0 0xFF6897
+#define KEY_100_PLUS 0xFF9867
+#define KEY_200_PLUS 0xFFB04F
+#define KEY_1 0xFF30CF
+#define KEY_2 0xFF18E7
+#define KEY_3 0xFF7A85
+#define KEY_4 0xFF10EF
+#define KEY_5 0xFF38C7
+#define KEY_6 0xFF5AA5
+#define KEY_7 0xFF42BD
+#define KEY_8 0xFF4AB5
+#define KEY_9 0xFF52AD
+
+class IRHandler
+{
+  private:
+    IRrecv* irrecv;
+    decode_results results;
+    unsigned long lastKey;
+    unsigned long lastReceiveTime;
+    unsigned long keyMaxHoldTime = 100;  // in milliseconds
+  public:
+    IRHandler(int pin)
+    {
+      irrecv = new IRrecv(pin);
+      irrecv->enableIRIn();
+      lastReceiveTime = millis();
+      lastKey = KEY_NONE;
+    }
+
+    unsigned long getLastKey()
+    {
+      return this->lastKey;
+    }
+
+    void update()
+    {
+      if ( irrecv->decode( &results )) { // если данные пришли
+        unsigned long receivedKey = results.value;
+        unsigned long currentTime = millis();
+
+        switch (receivedKey)
+        {
+          case KEY_HELD:
+            {
+              lastReceiveTime = millis();
+              break;
+            }
+          case KEY_CH_MINUS:
+          case KEY_CH:
+          case KEY_CH_PLUS:
+          case KEY_PREV:
+          case KEY_NEXT:
+          case KEY_PLAY_PAUSE:
+          case KEY_VOL_MINUS:
+          case KEY_VOL_PLUS:
+          case KEY_EQ:
+          case KEY_0:
+          case KEY_100_PLUS:
+          case KEY_200_PLUS:
+          case KEY_1:
+          case KEY_2:
+          case KEY_3:
+          case KEY_4:
+          case KEY_5:
+          case KEY_6:
+          case KEY_7:
+          case KEY_8:
+          case KEY_9:
+            {
+              lastKey = receivedKey;
+              lastReceiveTime = millis();
+              break;
+            }
+        }
+
+        irrecv->resume(); // принимаем следующую команду
+      }
+      else if (millis() - lastReceiveTime > keyMaxHoldTime)
+      {
+        lastKey = KEY_NONE;
+      }
+      //Serial.println(lastKey, HEX);
+    }
+};
+
+MotorsHandler* handler;
+IRHandler* irHandler;
 
 void setup() {
-#ifdef ENABLE_ERROR_LOGGING
   Serial.begin(9600);
+#ifdef ENABLE_ERROR_LOGGING
   Serial.println("Error logging enabled.");
   pinMode(LED_BUILTIN, OUTPUT);
 #endif
+  irHandler = new IRHandler(2);
   handler = new MotorsHandler(4, 5, 6, 7);  // 4, 5, 6, 7 - пины управления
   // put your setup code here, to run once:
   handler->stopMotor(LEFT_MOTOR);
@@ -128,11 +229,67 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  handler->stopMotor(RIGHT_MOTOR);
-  //handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
-  delay(1000);
-  //handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_NONE);
-  handler->spinForward(RIGHT_MOTOR);
-  delay(1000);
+  irHandler->update();
+  unsigned long key = irHandler->getLastKey();
+
+  switch(key)
+  {
+    case KEY_NONE:
+    {
+      handler->stopMotor(LEFT_MOTOR);
+      handler->stopMotor(RIGHT_MOTOR);
+      break;
+    }
+    case KEY_4:
+    {
+      handler->stopMotor(RIGHT_MOTOR);
+      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
+      break;
+    }
+    case KEY_7:
+    {
+      handler->stopMotor(RIGHT_MOTOR);
+      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
+      break;
+    }
+    case KEY_5:
+    {
+      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
+      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
+      break;
+    }
+    case KEY_8:
+    {
+      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
+      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
+      break;
+    }
+    case KEY_6:
+    {
+      handler->stopMotor(LEFT_MOTOR);
+      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
+      break;
+    }
+    case KEY_9:
+    {
+      handler->stopMotor(LEFT_MOTOR);
+      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
+      break;
+    }
+
+    case KEY_1:
+    {
+      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
+      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
+      break;
+    }
+    case KEY_3:
+    {
+      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
+      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
+      break;
+    }
+  }
+  
+  delay(50);
 }
