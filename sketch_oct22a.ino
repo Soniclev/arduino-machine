@@ -13,7 +13,7 @@ class MotorsHandler
   private:
     const uint8_t in1, in2, in3, in4;  //stores pins which used to control l298n driver
     uint8_t motorStates[2];
-    bool MotorsHandler::setMotorSpinDirection(int pin1, int pin2, int direction)  // set motor spin direction by pins
+    bool setMotorSpinDirection(int pin1, int pin2, int direction)  // set motor spin direction by pins
     {
       switch (direction)
       {
@@ -49,7 +49,7 @@ class MotorsHandler
     }
   public:
     // pins which are connected to their equal input pins IN1, IN2, IN3, IN4 on a driver
-    MotorsHandler::MotorsHandler(int in1, int in2, int in3, int in4) : in1(in1), in2(in2), in3(in3), in4(in4)
+    MotorsHandler(int in1, int in2, int in3, int in4) : in1(in1), in2(in2), in3(in3), in4(in4)
     {
       pinMode(in1, OUTPUT);
       pinMode(in2, OUTPUT);
@@ -59,7 +59,7 @@ class MotorsHandler
       this->stopMotor(RIGHT_MOTOR);
     }
 
-    int MotorsHandler::getMotorSpinState(int motorId)  // returns last known motor spin state
+    int getMotorSpinState(int motorId)  // returns last known motor spin state
     {
 #ifdef ENABLE_ERROR_LOGGING
       if (motorId < 0 || motorId > 1)
@@ -72,7 +72,7 @@ class MotorsHandler
       return motorStates[motorId];
     }
 
-    void MotorsHandler::setMotorSpinState(int motorId, int state) // motorId: 0 or 1, direction: use MOTOR_SPIN_* constants
+    void setMotorSpinState(int motorId, int state) // motorId: 0 or 1, direction: use MOTOR_SPIN_* constants
     {
       switch (motorId)
       {
@@ -99,17 +99,17 @@ class MotorsHandler
       }
     }
 
-    void MotorsHandler::spinBackward(int motorId) // spin motor backward by its id
+    void spinBackward(int motorId) // spin motor backward by its id
     {
       this->setMotorSpinState(motorId, MOTOR_SPIN_FORWARD);
     }
 
-    void MotorsHandler::spinForward(int motorId) // spin motor forward by its id
+    void spinForward(int motorId) // spin motor forward by its id
     {
       this->setMotorSpinState(motorId, MOTOR_SPIN_FORWARD);
     }
 
-    void MotorsHandler::stopMotor(int motorId) // stop motor by its id
+    void stopMotor(int motorId) // stop motor by its id
     {
       this->setMotorSpinState(motorId, MOTOR_SPIN_NONE);
     }
@@ -212,7 +212,7 @@ class IRHandler
     }
 };
 
-MotorsHandler* handler;
+MotorsHandler* motorHandler;
 IRHandler* irHandler;
 
 void setup() {
@@ -222,10 +222,10 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 #endif
   irHandler = new IRHandler(2);
-  handler = new MotorsHandler(4, 5, 6, 7);  // 4, 5, 6, 7 - пины управления
+  motorHandler = new MotorsHandler(4, 5, 6, 7);  // 4, 5, 6, 7 - пины управления
   // put your setup code here, to run once:
-  handler->stopMotor(LEFT_MOTOR);
-  handler->stopMotor(RIGHT_MOTOR);
+  motorHandler->stopMotor(LEFT_MOTOR);
+  motorHandler->stopMotor(RIGHT_MOTOR); 
 }
 
 void loop() {
@@ -236,57 +236,57 @@ void loop() {
   {
     case KEY_NONE:
     {
-      handler->stopMotor(LEFT_MOTOR);
-      handler->stopMotor(RIGHT_MOTOR);
+      motorHandler->stopMotor(LEFT_MOTOR);
+      motorHandler->stopMotor(RIGHT_MOTOR);
       break;
     }
     case KEY_4:
     {
-      handler->stopMotor(RIGHT_MOTOR);
-      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
+      motorHandler->stopMotor(RIGHT_MOTOR);
+      motorHandler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
       break;
     }
     case KEY_7:
     {
-      handler->stopMotor(RIGHT_MOTOR);
-      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
+      motorHandler->stopMotor(RIGHT_MOTOR);
+      motorHandler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
       break;
     }
     case KEY_5:
     {
-      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
-      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
+      motorHandler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
+      motorHandler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
       break;
     }
     case KEY_8:
     {
-      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
-      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
+      motorHandler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
+      motorHandler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
       break;
     }
     case KEY_6:
     {
-      handler->stopMotor(LEFT_MOTOR);
-      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
+      motorHandler->stopMotor(LEFT_MOTOR);
+      motorHandler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
       break;
     }
     case KEY_9:
     {
-      handler->stopMotor(LEFT_MOTOR);
-      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
+      motorHandler->stopMotor(LEFT_MOTOR);
+      motorHandler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
       break;
     }
 
     case KEY_1:
     {
-      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
-      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
+      motorHandler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_BACKWARD);
+      motorHandler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_FORWARD);
       break;
     }
     case KEY_3:
     {
-      handler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
-      handler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
+      motorHandler->setMotorSpinState(LEFT_MOTOR, MOTOR_SPIN_FORWARD);
+      motorHandler->setMotorSpinState(RIGHT_MOTOR, MOTOR_SPIN_BACKWARD);
       break;
     }
   }
